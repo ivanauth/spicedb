@@ -19,6 +19,7 @@ const (
 	pgReadOnlyTransaction       = "25006"
 	pgQueryCanceled             = "57014"
 	pgInvalidArgument           = "22023"
+	pgMissingTable              = "42P01"
 )
 
 var (
@@ -104,5 +105,22 @@ func ConvertToWriteConstraintError(livingTupleConstraints []string, err error) e
 		return dscommon.NewCreateRelationshipExistsError(nil)
 	}
 
+	return nil
+}
+
+// IsMissingTableError returns true if the error is a Postgres error indicating a missing table.
+// This typically happens when migrations have not been run.
+func IsMissingTableError(err error) bool {
+	var pgerr *pgconn.PgError
+	return errors.As(err, &pgerr) && pgerr.Code == pgMissingTable
+}
+
+// WrapMissingTableError checks if the error is a missing table error and wraps it with
+// a helpful message instructing the user to run migrations. If it's not a missing table error,
+// it returns nil.
+func WrapMissingTableError(err error) error {
+	if IsMissingTableError(err) {
+		return dscommon.NewSchemaNotInitializedError(err)
+	}
 	return nil
 }
