@@ -47,9 +47,9 @@ type Gate struct {
 	sfGroup singleflight.Group
 
 	mu            sync.RWMutex
-	cachedReady   bool
-	cachedMessage string
-	cacheTime     time.Time
+	cachedReady   bool      // GUARDED_BY(mu)
+	cachedMessage string    // GUARDED_BY(mu)
+	cacheTime     time.Time // GUARDED_BY(mu)
 }
 
 // NewGate creates a new readiness gate with the given checker.
