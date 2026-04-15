@@ -67,15 +67,11 @@ func TestObserveShapeLatency(t *testing.T) {
 	reg := prometheus.NewRegistry()
 
 	metric := prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace:                      "spicedb",
-		Subsystem:                      "perf_insights",
-		Name:                           "api_shape_latency_seconds",
-		Help:                           "The latency of API calls, by shape",
-		NativeHistogramBucketFactor:    1.1,
-		NativeHistogramMaxBucketNumber: 100,
-		Buckets: []float64{
-			.001, .003, .006, .010, .018, .024, .032, .042, .056, .075, .100, .178, .316, .562, 1, 2, 3, 5, 7, 10,
-		},
+		Namespace: "spicedb",
+		Subsystem: "perf_insights",
+		Name:      "api_shape_latency_seconds",
+		Help:      "The latency of API calls, by shape",
+		Buckets:   []float64{0.005, 0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10},
 	}, append([]string{"api_kind"}, allLabels...))
 	require.NoError(t, reg.Register(metric))
 
@@ -104,8 +100,8 @@ func TestObserveShapeLatency(t *testing.T) {
 
 		// Verify classic buckets are populated (not just +Inf).
 		buckets := metric.GetMetric()[0].Histogram.GetBucket()
-		require.Len(t, buckets, 20)
-		require.InDelta(t, 0.001, buckets[0].GetUpperBound(), 1e-9)
+		require.Len(t, buckets, 10)
+		require.InDelta(t, 0.005, buckets[0].GetUpperBound(), 1e-9)
 		require.InDelta(t, float64(10), buckets[len(buckets)-1].GetUpperBound(), 1e-9)
 
 		for _, label := range metric.GetMetric()[0].Label {

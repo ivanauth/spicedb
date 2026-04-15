@@ -54,25 +54,14 @@ func NoLabels() APIShapeLabels {
 // of the API call that are not the specific object IDs, e.g. the resource type,
 // the relation, the subject type, etc.
 //
-// NOTE: This metric uses both classic and native histogram buckets. Classic buckets
-// ensure compatibility with standard PromQL queries (e.g. histogram_quantile), while
-// native histograms provide higher resolution when supported by the Prometheus server.
-//
-// To make use of native histograms, a special flag must be set on Prometheus:
-// https://prometheus.io/docs/prometheus/latest/feature_flags/#native-histograms
+// NOTE: This metric uses classic histogram buckets covering fast queries (5ms)
+// through slow ones (10s).
 var APIShapeLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
-	Namespace:                      "spicedb",
-	Subsystem:                      "perf_insights",
-	Name:                           "api_shape_latency_seconds",
-	Help:                           "The latency of API calls, by shape",
-	NativeHistogramBucketFactor:    1.1,
-	NativeHistogramMaxBucketNumber: 100,
-	// Bucket boundaries: sub-second values match the gRPC server handling
-	// time histogram in pkg/cmd/server/defaults.go (createServerMetrics);
-	// 1–10s buckets added for slow query visibility in Perf Insights.
-	Buckets: []float64{
-		.001, .003, .006, .010, .018, .024, .032, .042, .056, .075, .100, .178, .316, .562, 1, 2, 3, 5, 7, 10,
-	},
+	Namespace: "spicedb",
+	Subsystem: "perf_insights",
+	Name:      "api_shape_latency_seconds",
+	Help:      "The latency of API calls, by shape",
+	Buckets:   []float64{0.005, 0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10},
 }, append([]string{"api_kind"}, allLabels...))
 
 var tracer = otel.Tracer("spicedb/internal/middleware")
