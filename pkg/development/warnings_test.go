@@ -240,11 +240,106 @@ func TestWarnings(t *testing.T) {
 		{
 			name: "exclusion operation",
 			schema: `definition user {}
-			
+
 			definition document {
 				relation viewer: user
 				relation editor: user
 				permission view = viewer - editor
+			}
+			`,
+			expectedWarning: nil,
+		},
+		{
+			name: "mixed union and exclusion operators without parentheses",
+			schema: `definition user {}
+
+			definition document {
+				relation viewer: user
+				relation editor: user
+				relation admin: user
+				permission view = viewer + editor - admin
+			}
+			`,
+			expectedWarning: &developerv1.DeveloperWarning{
+				Message:    "Permission \"view\" mixes operators (union, intersection, exclusion) at the same level without explicit parentheses; consider adding parentheses to clarify precedence (mixed-operators-without-parentheses)",
+				Line:       7,
+				Column:     23,
+				SourceCode: "view",
+			},
+		},
+		{
+			name: "mixed union and intersection operators without parentheses",
+			schema: `definition user {}
+
+			definition document {
+				relation viewer: user
+				relation editor: user
+				relation admin: user
+				permission view = viewer + editor & admin
+			}
+			`,
+			expectedWarning: &developerv1.DeveloperWarning{
+				Message:    "Permission \"view\" mixes operators (union, intersection, exclusion) at the same level without explicit parentheses; consider adding parentheses to clarify precedence (mixed-operators-without-parentheses)",
+				Line:       7,
+				Column:     23,
+				SourceCode: "view",
+			},
+		},
+		{
+			name: "mixed intersection and exclusion operators without parentheses",
+			schema: `definition user {}
+
+			definition document {
+				relation viewer: user
+				relation editor: user
+				relation admin: user
+				permission view = viewer & editor - admin
+			}
+			`,
+			expectedWarning: &developerv1.DeveloperWarning{
+				Message:    "Permission \"view\" mixes operators (union, intersection, exclusion) at the same level without explicit parentheses; consider adding parentheses to clarify precedence (mixed-operators-without-parentheses)",
+				Line:       7,
+				Column:     23,
+				SourceCode: "view",
+			},
+		},
+		{
+			name: "mixed operators clarified with parentheses on left",
+			schema: `definition user {}
+
+			definition document {
+				relation viewer: user
+				relation editor: user
+				relation admin: user
+				permission view = (viewer + editor) - admin
+			}
+			`,
+			expectedWarning: nil,
+		},
+		{
+			name: "mixed operators clarified with parentheses on right",
+			schema: `definition user {}
+
+			definition document {
+				relation viewer: user
+				relation editor: user
+				relation admin: user
+				permission view = viewer + (editor - admin)
+			}
+			`,
+			expectedWarning: nil,
+		},
+		{
+			name: "mixed operators without parentheses but warning disabled",
+			schema: `definition user {}
+
+			definition document {
+				relation viewer: user
+				relation editor: user
+				relation admin: user
+
+				// spicedb-ignore-warning: mixed-operators-without-parentheses
+				permission view = viewer + editor - admin
 			}
 			`,
 			expectedWarning: nil,
